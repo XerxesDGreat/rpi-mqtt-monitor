@@ -68,6 +68,10 @@ def build_discovery_topic(metric_name):
     return f'homeassistant/sensor/{config.mqtt_topic_prefix}/{hostname}_{metric_name}/config'
 
 
+def build_value_topic(metric_name):
+    return f'{config.mqtt_topic_prefix}/{hostname}/{metric_name}'
+
+
 def publish_then_sleep(client, topic, payload, qos):
     client.publish(topic, payload, qos=qos)
     time.sleep(config.sleep_time)
@@ -76,7 +80,11 @@ def publish_then_sleep(client, topic, payload, qos):
 def publish_discovery_for_metric(client, metric_name):
     if not config.discovery_messages:
         return
-    publish_then_sleep(client, build_discovery_topic(metric_name), build_discovery_payload(metric_name), qos=0)
+    publish_then_sleep(client, build_discovery_topic(metric_name), build_discovery_payload(metric_name), 0)
+
+
+def publish_metric_value(client, metric_name, value):
+    publish_then_sleep(client, build_value_topic(metric_name), value, 1)
 
 
 def publish_to_mqtt(cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
@@ -89,36 +97,28 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_s
     # publish monitored values to MQTT
     if config.cpu_load:
         publish_discovery_for_metric(client, "cpu_load")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cpu_load", cpu_load, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "cpu_load", cpu_load)
     if config.cpu_temp:
         publish_discovery_for_metric(client, "cpu_temp")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cpu_temp", cpu_temp, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "cpu_temp", cpu_temp)
     if config.disk_usage:
         publish_discovery_for_metric(client, "disk_usage")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/disk_usage", disk_usage, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "disk_usage", disk_usage)
     if config.voltage:
         publish_discovery_for_metric(client, "voltage")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/voltage", voltage, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "voltage", voltage)
     if config.swap:
         publish_discovery_for_metric(client, "swap")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/swap", swap, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "swap", swap)
     if config.memory:
         publish_discovery_for_metric(client, "memory")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/memory", memory, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "memory", memory)
     if config.sys_clock_speed:
         publish_discovery_for_metric(client, "sys_clock_speed")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/sys_clock_speed", sys_clock_speed, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "sys_clock_speed", sys_clock_speed)
     if config.uptime_days:
         publish_discovery_for_metric(client, "uptime_days")
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/uptime_days", uptime_days, qos=1)
-        time.sleep(config.sleep_time)
+        publish_metric_value(client, "uptime_days", uptime_days)
     # disconnect from mqtt server
     client.disconnect()
 
