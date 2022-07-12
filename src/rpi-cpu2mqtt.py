@@ -153,34 +153,19 @@ def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_cl
 
 
 def report_metrics():
-    # set all monitored values to False in case they are turned off in the config
-    cpu_load = cpu_temp = used_space = voltage = sys_clock_speed = swap = memory = uptime_days = False
-
     # delay the execution of the script
     time.sleep(config.random_delay)
 
     # collect the monitored values
-    if config.cpu_load:
-        cpu_load = m.check_cpu_load()
-    if config.cpu_temp:
-        cpu_temp = m.check_cpu_temp()
-    if config.used_space:
-        used_space = m.check_used_space('/')
-    if config.voltage:
-        voltage = m.check_voltage()
-    if config.sys_clock_speed:
-        sys_clock_speed = m.check_sys_clock_speed()
-    if config.swap:
-        swap = m.check_swap()
-    if config.memory:
-        memory = m.check_memory()
-    if config.uptime:
-        uptime_days = m.check_uptime()
+    metric_values = {
+        metric_name: config.measure_func() if config.should_measure else False
+        for metric_name, config in metrics.items()
+    }
     # Publish messages to MQTT
     if config.group_messages:
-        bulk_publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days)
+        bulk_publish_to_mqtt(*metric_values.values())
     else:
-        publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days)
+        publish_to_mqtt(*metric_values.values())
 
 
 if __name__ == '__main__':

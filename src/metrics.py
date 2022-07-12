@@ -3,7 +3,7 @@ import logging
 import os
 import subprocess
 
-def check_used_space(path):
+def check_used_space(path="/"):
     logging.debug("check_used_space")
     if config.dry_run:
         return 1000
