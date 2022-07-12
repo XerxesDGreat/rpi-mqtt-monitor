@@ -21,6 +21,11 @@ discovery_messages = True
 # - if you want a fix delay you can remove the randrange function and just set the needed delay.
 random_delay = randrange(3)
 
+# If dry run, only prints that the functions which perform measurements are being called, but
+# doesn't actually grab the measurements. This is handy if one is developing on something other
+# than a true Ubuntu system (e.g. Ubuntu WSL on Windows doesn't have some of the required operations)
+dry_run = False
+
 log_config = {
     'version': 1,
     'loggers': {
