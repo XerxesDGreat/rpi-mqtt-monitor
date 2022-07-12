@@ -96,25 +96,25 @@ update_config(){
   print_green  "+ config.py is updated with provided settings"
 }
 
-set_cron(){
-  printm "Setting Cronjob"
-  cwd=$(pwd)
-  crontab -l > tempcron
-  if grep -q rpi-cpu2mqtt.py tempcron; then
-    cronfound=$(grep rpi-cpu2mqtt.py tempcron)
-    print_yellow " There is already a cronjob running rpi-cpu2mqtt.py - skipping cronjob creation.\n"
-    print_yellow " If you want the cronjob to be automatically created remove the line below from your\n cronjobs list and run the installer again.\n\n"
-    echo " ${cronfound}"
-  else
-    printf "How often do you want the script to run in minutes? "
-    read MIN
-    echo "Adding the line below to your crontab"
-    echo "*/${MIN} * * * * ${python} ${cwd}/src/rpi-cpu2mqtt.py"
-    echo "*/${MIN} * * * * ${python} ${cwd}/src/rpi-cpu2mqtt.py" >> tempcron
-    crontab tempcron
-  fi
-  rm tempcron
-}
+# set_cron(){
+#   printm "Setting Cronjob"
+#   cwd=$(pwd)
+#   crontab -l > tempcron
+#   if grep -q rpi-cpu2mqtt.py tempcron; then
+#     cronfound=$(grep rpi-cpu2mqtt.py tempcron)
+#     print_yellow " There is already a cronjob running rpi-cpu2mqtt.py - skipping cronjob creation.\n"
+#     print_yellow " If you want the cronjob to be automatically created remove the line below from your\n cronjobs list and run the installer again.\n\n"
+#     echo " ${cronfound}"
+#   else
+#     printf "How often do you want the script to run in minutes? "
+#     read MIN
+#     echo "Adding the line below to your crontab"
+#     echo "*/${MIN} * * * * ${python} ${cwd}/src/rpi-cpu2mqtt.py"
+#     echo "*/${MIN} * * * * ${python} ${cwd}/src/rpi-cpu2mqtt.py" >> tempcron
+#     crontab tempcron
+#   fi
+#   rm tempcron
+# }
 
 main(){
   printm "Raspberry Pi MQTT monitor installer"
@@ -123,7 +123,7 @@ main(){
   check_and_install_pip
   install_requirements 
   update_config
-  set_cron
+  #set_cron
   printm "Done"
 }
 
