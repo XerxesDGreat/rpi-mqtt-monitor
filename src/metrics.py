@@ -3,8 +3,8 @@ import logging
 import os
 import subprocess
 
-def check_used_space(path="/"):
-    logging.debug("check_used_space")
+def check_disk_usage(path="/"):
+    logging.debug("check_disk_usage")
     if config.dry_run:
         return 1000
     st = os.statvfs(path)
