@@ -152,7 +152,7 @@ def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_cl
     client.disconnect()
 
 
-if __name__ == '__main__':
+def report_metrics():
     # set all monitored values to False in case they are turned off in the config
     cpu_load = cpu_temp = used_space = voltage = sys_clock_speed = swap = memory = uptime_days = False
 
@@ -181,3 +181,7 @@ if __name__ == '__main__':
         bulk_publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days)
     else:
         publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days)
+
+
+if __name__ == '__main__':
+    report_metrics()
