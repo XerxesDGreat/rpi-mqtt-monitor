@@ -21,6 +21,32 @@ discovery_messages = True
 # - if you want a fix delay you can remove the randrange function and just set the needed delay.
 random_delay = randrange(3)
 
+log_config = {
+    'version': 1,
+    'loggers': {
+        '': {
+            'level': 'NOTSET',
+            'handlers': ['rotating_info_handler'],
+        },
+    },
+    'handlers': {
+        'rotating_info_handler': {
+            'level': 'DEBUG',
+            'formatter': 'info',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'log.txt',
+            'mode': 'a',
+            'maxBytes': 1048576,
+            'backupCount': 10
+        },
+    },
+    'formatters': {
+        'info': {
+            'format': '%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s'
+        },
+    },
+}
+
 # This is the time  between sending the individual messages
 sleep_time = 0.5
 cpu_load = True

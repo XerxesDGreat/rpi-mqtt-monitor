@@ -5,13 +5,19 @@
 # RUN sudo apt-get install python-pip
 
 from __future__ import division
+from logging.config import dictConfig
+import config
+
+# configure logging before bringing in other modules
+dictConfig(config.log_config)
+
+import json
+import os
+import paho.mqtt.client as paho
+import socket
 import subprocess
 import time
-import socket
-import paho.mqtt.client as paho
-import json
-import config
-import os
+
 
 # get device host name - used in mqtt topic
 hostname = socket.gethostname()
