@@ -116,7 +116,7 @@ def publish_to_mqtt(client, metric_values_dict):
 
 def bulk_publish_to_mqtt(client, metric_values_dict):
     # compose the CSV message containing the measured values
-    values = ','.join(metric_values_dict.values())
+    values = ','.join([str(val) for val in metric_values_dict.values()])
 
     # publish monitored values to MQTT
     client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
