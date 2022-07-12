@@ -5,6 +5,7 @@
 # RUN sudo apt-get install python-pip
 
 from __future__ import division
+from collections import namedtuple
 from logging.config import dictConfig
 import config
 
@@ -21,61 +22,44 @@ import subprocess
 import time
 
 
-# get device host name - used in mqtt topic
+# get device host and model names as these are constant
 hostname = socket.gethostname()
+modelname = m.check_model_name()
 
-def config_json(what_config):
-    model_name = m.check_model_name()
+# named tuple for the metrics configuration details
+MetricConfig = namedtuple("MetricConfig", ["icon", "name", "unit_of_measurement"])
+
+# list of all the metrics and their configurations
+metrics = {
+    "cpu_load": MetricConfig("mdi:speedometer", "CPU Usage", "%"),
+    "cpu_temp": MetricConfig("hass:thermometer", "CPU Temperature", "°C"),
+    "used_space": MetricConfig("mdi:harddisk", "Disk Usage", "%"),
+    "voltage": MetricConfig("mdi:sine-wave", "CPU Voltage", "V"),
+    "sys_clock_speed": MetricConfig("mdi:speedometer", "CPU Clock Speed", "MHz"),
+    "swap": MetricConfig("mdi:harddisk", "Disk Swap", "%"),
+    "memory": MetricConfig("mdi:memory", "Memory Usage", "%"),
+    "uptime": MetricConfig("mdi:timer", "Uptime", "days")
+}
+
+def build_discovery_payload(metric_name):
+    metric_config = metrics.get(metric_name)
+    if metric_config is None:
+        return ""
+
     data = {
-        "state_topic": "",
-        "icon": "",
-        "name": "",
-        "unique_id": "",
-        "unit_of_measurement": "",
-	"device": {
-	    "identifiers": [hostname],
-	    "manufacturer": "Raspberry Pi",
-	    "model": model_name,
-	    "name": hostname
-	}
+        "state_topic": f'{config.mqtt_topic_prefix}/{hostname}/{metric_name}',
+        "icon": metric_config.icon,
+        "name": f'{hostname} {metric_config.name}',
+        "unique_id": f'{hostname}_{metric_name}',
+        "unit_of_measurement": metric_config.unit_of_measurement,
+        "device": {
+            "identifiers": [hostname],
+            "manufacturer": "Raspberry Pi",
+            "model": modelname,
+            "name": hostname
+        }
     }
 
-    data["state_topic"] = config.mqtt_topic_prefix + "/" + hostname + "/" + what_config
-    data["unique_id"] = hostname + "_" + what_config
-    if what_config == "cpuload":
-        data["icon"] = "mdi:speedometer"
-        data["name"] = hostname + " CPU Usage"
-        data["unit_of_measurement"] = "%"
-    elif what_config == "cputemp":
-        data["icon"] = "hass:thermometer"
-        data["name"] = hostname + " CPU Temperature"
-        data["unit_of_measurement"] = "°C"
-    elif what_config == "diskusage":
-        data["icon"] = "mdi:harddisk"
-        data["name"] = hostname + " Disk Usage"
-        data["unit_of_measurement"] = "%"
-    elif what_config == "voltage":
-        data["icon"] = "mdi:speedometer"
-        data["name"] = hostname + " CPU Voltage"
-        data["unit_of_measurement"] = "V"
-    elif what_config == "swap":
-        data["icon"] = "mdi:harddisk"
-        data["name"] = hostname + " Disk Swap"
-        data["unit_of_measurement"] = "%"
-    elif what_config == "memory":
-        data["icon"] = "mdi:memory"
-        data["name"] = hostname + " Memory Usage"
-        data["unit_of_measurement"] = "%"
-    elif what_config == "sys_clock_speed":
-        data["icon"] = "mdi:speedometer"
-        data["name"] = hostname + " CPU Clock Speed"
-        data["unit_of_measurement"] = "MHz"
-    elif what_config == "uptime_days":
-        data["icon"] = "mdi:timer"
-        data["name"] = hostname + " Uptime"
-        data["unit_of_measurement"] = "days"
-    else:
-        return ""
     # Return our built discovery config
     return json.dumps(data)
 
@@ -91,42 +75,42 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_s
     if config.cpu_load:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_cpuload/config",
-                           config_json('cpuload'), qos=0)
+                           build_discovery_payload('cpuload'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cpuload", cpu_load, qos=1)
         time.sleep(config.sleep_time)
     if config.cpu_temp:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_cputemp/config",
-                           config_json('cputemp'), qos=0)
+                           build_discovery_payload('cputemp'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cputemp", cpu_temp, qos=1)
         time.sleep(config.sleep_time)
     if config.used_space:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_diskusage/config",
-                           config_json('diskusage'), qos=0)
+                           build_discovery_payload('diskusage'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/diskusage", used_space, qos=1)
         time.sleep(config.sleep_time)
     if config.voltage:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_voltage/config",
-                           config_json('voltage'), qos=0)
+                           build_discovery_payload('voltage'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/voltage", voltage, qos=1)
         time.sleep(config.sleep_time)
     if config.swap:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_swap/config",
-                           config_json('swap'), qos=0)
+                           build_discovery_payload('swap'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/swap", swap, qos=1)
         time.sleep(config.sleep_time)
     if config.memory:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_memory/config",
-                           config_json('memory'), qos=0)
+                           build_discovery_payload('memory'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/memory", memory, qos=1)
         time.sleep(config.sleep_time)
@@ -134,14 +118,14 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_s
         if config.discovery_messages:
             client.publish(
                 "homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_sys_clock_speed/config",
-                config_json('sys_clock_speed'), qos=0)
+                build_discovery_payload('sys_clock_speed'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/sys_clock_speed", sys_clock_speed, qos=1)
         time.sleep(config.sleep_time)
     if config.uptime:
         if config.discovery_messages:
             client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_uptime_days/config",
-                           config_json('uptime_days'), qos=0)
+                           build_discovery_payload('uptime_days'), qos=0)
             time.sleep(config.sleep_time)
         client.publish(config.mqtt_topic_prefix + "/" + hostname + "/uptime_days", uptime_days, qos=1)
         time.sleep(config.sleep_time)
