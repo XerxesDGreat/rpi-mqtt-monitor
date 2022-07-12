@@ -15,10 +15,8 @@ dictConfig(config.log_config)
 import json
 import logging
 import metrics as m
-import os
 import paho.mqtt.client as paho
 import socket
-import subprocess
 import time
 
 
@@ -87,12 +85,8 @@ def publish_metric_value(client, metric_name, value):
     publish_then_sleep(client, build_value_topic(metric_name), value, 1)
 
 
-def publish_to_mqtt(cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
+def publish_to_mqtt(client, cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
                     uptime_days=0):
-    # connect to mqtt server
-    client = paho.Client()
-    client.username_pw_set(config.mqtt_user, config.mqtt_password)
-    client.connect(config.mqtt_host, int(config.mqtt_port))
 
     # publish monitored values to MQTT
     if config.cpu_load:
@@ -119,32 +113,26 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_s
     if config.uptime_days:
         publish_discovery_for_metric(client, "uptime_days")
         publish_metric_value(client, "uptime_days", uptime_days)
-    # disconnect from mqtt server
-    client.disconnect()
 
 
-def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
+def bulk_publish_to_mqtt(client, cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
                          uptime_days=0):
     # compose the CSV message containing the measured values
 
     values = cpu_load, float(cpu_temp), disk_usage, float(voltage), int(sys_clock_speed), swap, memory, uptime_days
     values = str(values)[1:-1]
 
-    # connect to mqtt server
-    client = paho.Client()
-    client.username_pw_set(config.mqtt_user, config.mqtt_password)
-    client.connect(config.mqtt_host, int(config.mqtt_port))
-
     # publish monitored values to MQTT
     client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
-
-    # disconnect from mqtt server
-    client.disconnect()
 
 
 def report_metrics():
     # delay the execution of the script
     time.sleep(config.random_delay)
+
+    client = paho.Client()
+    client.username_pw_set(config.mqtt_user, config.mqtt_password)
+    client.connect(config.mqtt_host, int(config.mqtt_port))
 
     # collect the monitored values
     metric_values = {
@@ -153,9 +141,11 @@ def report_metrics():
     }
     # Publish messages to MQTT
     if config.group_messages:
-        bulk_publish_to_mqtt(*metric_values.values())
+        bulk_publish_to_mqtt(client, *metric_values.values())
     else:
-        publish_to_mqtt(*metric_values.values())
+        publish_to_mqtt(client, *metric_values.values())
+
+    client.disconnect()
 
 
 if __name__ == '__main__':
