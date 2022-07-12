@@ -23,6 +23,32 @@ sensors are built up; there is no need for updating discovery messages. However,
 are removed from Home Assistant automatically. Thus, this script will send discovery messages on an interval in case the MQTT broker
 is reset or the topics are cleared; this way, it is unnecessary to restart the individual services.
 
+# Installation
+
+## Automatic
+```bash
+bash <(curl -s https://raw.githubusercontent.com/hjelev/rpi-mqtt-monitor/master/remote_install.sh)
+```
+
+## Manual
+
+Install pip if you don't have it:
+```bash
+# install pip
+$ sudo apt install python-pip
+
+# install the requirements
+$ pip install -r requirements.txt
+
+# clone the repo
+$ git clone https://github.com/xerxesdgreat/rpi-mqtt-monitor.git
+
+# copy files
+$ cd rpi-mqtt-monitor
+$ cp src/rpi-cpu2mqtt.py /dir/of/choice/rpi-cpu2mqtt.py
+$ cp src/config.py.example /dir/of/choice/config.py
+```
+
 # Todo
 * retry connection
 * failed connection backoff
