@@ -85,45 +85,50 @@ def publish_metric_value(client, metric_name, value):
     publish_then_sleep(client, build_value_topic(metric_name), value, 1)
 
 
-def publish_to_mqtt(client, cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
-                    uptime_days=0):
+def publish_to_mqtt(client, metric_values_dict):
 
     # publish monitored values to MQTT
     if config.cpu_load:
         publish_discovery_for_metric(client, "cpu_load")
-        publish_metric_value(client, "cpu_load", cpu_load)
+        publish_metric_value(client, "cpu_load", metric_values_dict.get("cpu_load"))
     if config.cpu_temp:
         publish_discovery_for_metric(client, "cpu_temp")
-        publish_metric_value(client, "cpu_temp", cpu_temp)
+        publish_metric_value(client, "cpu_temp", metric_values_dict.get("cpu_temp"))
     if config.disk_usage:
         publish_discovery_for_metric(client, "disk_usage")
-        publish_metric_value(client, "disk_usage", disk_usage)
+        publish_metric_value(client, "disk_usage", metric_values_dict.get("disk_usage"))
     if config.voltage:
         publish_discovery_for_metric(client, "voltage")
-        publish_metric_value(client, "voltage", voltage)
+        publish_metric_value(client, "voltage", metric_values_dict.get("voltage"))
     if config.swap:
         publish_discovery_for_metric(client, "swap")
-        publish_metric_value(client, "swap", swap)
+        publish_metric_value(client, "swap", metric_values_dict.get("swap"))
     if config.memory:
         publish_discovery_for_metric(client, "memory")
-        publish_metric_value(client, "memory", memory)
+        publish_metric_value(client, "memory", metric_values_dict.get("memory"))
     if config.sys_clock_speed:
         publish_discovery_for_metric(client, "sys_clock_speed")
-        publish_metric_value(client, "sys_clock_speed", sys_clock_speed)
+        publish_metric_value(client, "sys_clock_speed", metric_values_dict.get("sys_clock_speed"))
     if config.uptime_days:
         publish_discovery_for_metric(client, "uptime_days")
-        publish_metric_value(client, "uptime_days", uptime_days)
+        publish_metric_value(client, "uptime_days", metric_values_dict.get("uptime_days"))
 
 
-def bulk_publish_to_mqtt(client, cpu_load=0, cpu_temp=0, disk_usage=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
-                         uptime_days=0):
+def bulk_publish_to_mqtt(client, metric_values_dict):
     # compose the CSV message containing the measured values
-
-    values = cpu_load, float(cpu_temp), disk_usage, float(voltage), int(sys_clock_speed), swap, memory, uptime_days
-    values = str(values)[1:-1]
+    values = ','.join(metric_values_dict.values())
 
     # publish monitored values to MQTT
     client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
+
+
+def gather_metric_values():
+    # collect the monitored values
+    metric_values = {
+        metric_name: config.measure_func() if config.should_measure else False
+        for metric_name, config in metrics.items()
+    }
+    return metric_values
 
 
 def report_metrics():
@@ -134,16 +139,9 @@ def report_metrics():
     client.username_pw_set(config.mqtt_user, config.mqtt_password)
     client.connect(config.mqtt_host, int(config.mqtt_port))
 
-    # collect the monitored values
-    metric_values = {
-        metric_name: config.measure_func() if config.should_measure else False
-        for metric_name, config in metrics.items()
-    }
-    # Publish messages to MQTT
-    if config.group_messages:
-        bulk_publish_to_mqtt(client, *metric_values.values())
-    else:
-        publish_to_mqtt(client, *metric_values.values())
+    metric_values = gather_metric_values()
+    publish_func = bulk_publish_to_mqtt if config.group_messages else publish_to_mqtt
+    publish_func(client, metric_values)
 
     client.disconnect()
 
