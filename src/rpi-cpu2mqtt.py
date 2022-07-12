@@ -27,18 +27,18 @@ hostname = socket.gethostname()
 modelname = m.check_model_name()
 
 # named tuple for the metrics configuration details
-MetricConfig = namedtuple("MetricConfig", ["icon", "name", "unit_of_measurement"])
+MetricConfig = namedtuple("MetricConfig", ["icon", "name", "unit_of_measurement", "should_measure", "measure_func"])
 
 # list of all the metrics and their configurations
 metrics = {
-    "cpu_load": MetricConfig("mdi:speedometer", "CPU Usage", "%"),
-    "cpu_temp": MetricConfig("hass:thermometer", "CPU Temperature", "°C"),
-    "used_space": MetricConfig("mdi:harddisk", "Disk Usage", "%"),
-    "voltage": MetricConfig("mdi:sine-wave", "CPU Voltage", "V"),
-    "sys_clock_speed": MetricConfig("mdi:speedometer", "CPU Clock Speed", "MHz"),
-    "swap": MetricConfig("mdi:harddisk", "Disk Swap", "%"),
-    "memory": MetricConfig("mdi:memory", "Memory Usage", "%"),
-    "uptime": MetricConfig("mdi:timer", "Uptime", "days")
+    "cpu_load": MetricConfig("mdi:speedometer", "CPU Usage", "%", config.cpu_load, m.check_cpu_load),
+    "cpu_temp": MetricConfig("hass:thermometer", "CPU Temperature", "°C", config.cpu_temp, m.check_cpu_temp),
+    "used_space": MetricConfig("mdi:harddisk", "Disk Usage", "%", config.used_space, m.check_used_space),
+    "voltage": MetricConfig("mdi:sine-wave", "CPU Voltage", "V", config.voltage, m.check_voltage),
+    "sys_clock_speed": MetricConfig("mdi:speedometer", "CPU Clock Speed", "MHz", config.sys_clock_speed, m.check_sys_clock_speed),
+    "swap": MetricConfig("mdi:harddisk", "Disk Swap", "%", config.swap, m.check_swap),
+    "memory": MetricConfig("mdi:memory", "Memory Usage", "%", config.memory, m.check_memory),
+    "uptime": MetricConfig("mdi:timer", "Uptime", "days", config.uptime, m.check_uptime),
 }
 
 def build_discovery_payload(metric_name):
