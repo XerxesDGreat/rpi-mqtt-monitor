@@ -26,6 +26,9 @@ random_delay = randrange(3)
 # than a true Ubuntu system (e.g. Ubuntu WSL on Windows doesn't have some of the required operations)
 dry_run = False
 
+# how many seconds between iterations of the loop
+loop_time_seconds = 10
+
 log_config = {
     'version': 1,
     'loggers': {

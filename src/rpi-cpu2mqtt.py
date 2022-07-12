@@ -39,6 +39,13 @@ metrics = {
     "uptime_days": MetricConfig("mdi:timer", "Uptime", "days", config.uptime_days, m.check_uptime),
 }
 
+# mqtt client-related stuff
+_mqtt_client = paho.Client()
+_is_mqtt_connected = False
+
+# loop controls
+_should_run = True
+
 def build_discovery_payload(metric_name):
     metric_config = metrics.get(metric_name)
     if metric_config is None:
@@ -70,35 +77,35 @@ def build_value_topic(metric_name):
     return f'{config.mqtt_topic_prefix}/{hostname}/{metric_name}'
 
 
-def publish_then_sleep(client, topic, payload, qos):
-    client.publish(topic, payload, qos=qos)
+def publish_then_sleep(topic, payload, qos):
+    _mqtt_client.publish(topic, payload, qos=qos)
     time.sleep(config.sleep_time)
 
 
-def publish_discovery_for_metric(client, metric_name):
+def publish_discovery_for_metric(metric_name):
     if not config.discovery_messages:
         return
-    publish_then_sleep(client, build_discovery_topic(metric_name), build_discovery_payload(metric_name), 0)
+    publish_then_sleep(build_discovery_topic(metric_name), build_discovery_payload(metric_name), 0)
 
 
-def publish_metric_value(client, metric_name, value):
-    publish_then_sleep(client, build_value_topic(metric_name), value, 1)
+def publish_metric_value(metric_name, value):
+    publish_then_sleep(build_value_topic(metric_name), value, 1)
 
 
-def publish_to_mqtt(client, metric_values_dict):
+def publish_to_mqtt(metric_values_dict):
     for metric_name, value in metric_values_dict.items():
         config = metrics.get(metric_name)
         if config is not None and config.should_measure:
-            publish_discovery_for_metric(client, metric_name)
-            publish_metric_value(client, metric_name, value)
-            
+            publish_discovery_for_metric(metric_name)
+            publish_metric_value(metric_name, value)
 
-def bulk_publish_to_mqtt(client, metric_values_dict):
+
+def bulk_publish_to_mqtt(metric_values_dict):
     # compose the CSV message containing the measured values
     values = ','.join([str(val) for val in metric_values_dict.values()])
 
     # publish monitored values to MQTT
-    client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
+    _mqtt_client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
 
 
 def gather_metric_values():
@@ -110,20 +117,48 @@ def gather_metric_values():
     return metric_values
 
 
-def report_metrics():
-    # delay the execution of the script
-    time.sleep(config.random_delay)
-
-    client = paho.Client()
-    client.username_pw_set(config.mqtt_user, config.mqtt_password)
-    client.connect(config.mqtt_host, int(config.mqtt_port))
-
+def loop():
     metric_values = gather_metric_values()
     publish_func = bulk_publish_to_mqtt if config.group_messages else publish_to_mqtt
-    publish_func(client, metric_values)
+    publish_func(metric_values)
 
-    client.disconnect()
+
+def on_connect(client, userdata, flags, rc):
+    global _is_mqtt_connected
+    logging.info("client is connected with rc [%s]" % rc)
+    _is_mqtt_connected = True
+
+
+def on_disconnect(client, userdata, rc):
+    global _is_mqtt_connected
+    logging.info("client is disconnected with rc [%s]" % rc)
+    _is_mqtt_connected = False
+    disconnect()
+
+
+def connect():
+    global _mqtt_client
+    _mqtt_client.username_pw_set(config.mqtt_user, config.mqtt_password)
+    _mqtt_client.on_connect = on_connect
+    _mqtt_client.on_disconnect = on_disconnect
+    _mqtt_client.connect(config.mqtt_host, int(config.mqtt_port))
+    _mqtt_client.loop_start()
+
+
+def disconnect():
+    global _mqtt_client
+    _mqtt_client.disconnect()
+    _mqtt_client.loop_stop()
+
+
+def start_loop():
+    connect()
+    time.sleep(config.random_delay) # this will help stagger updates from multiple devices
+    while _should_run:
+        loop()
+        time.sleep(config.loop_time_seconds)
+    disconnect()
 
 
 if __name__ == '__main__':
-    report_metrics()
+    start_loop()
