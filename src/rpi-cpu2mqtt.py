@@ -45,6 +45,7 @@ _is_mqtt_connected = False
 
 # loop controls
 _should_run = True
+_last_discovery_publish = 0
 
 def build_discovery_payload(metric_name):
     metric_config = metrics.get(metric_name)
@@ -88,6 +89,20 @@ def publish_discovery_for_metric(metric_name):
     publish_then_sleep(build_discovery_topic(metric_name), build_discovery_payload(metric_name), 0)
 
 
+def publish_discovery():
+    global _last_discovery_publish
+    if not config.discovery_messages:
+        return
+    curtime = int(time.time())
+    if curtime <= (_last_discovery_publish + config.discovery_message_interval_seconds):
+        return
+    for metric_name, metric_config in metrics.items():
+        if not metric_config.should_measure:
+            continue
+        publish_discovery_for_metric(metric_name)
+    _last_discovery_publish = curtime
+
+
 def publish_metric_value(metric_name, value):
     publish_then_sleep(build_value_topic(metric_name), value, 1)
 
@@ -96,7 +111,6 @@ def publish_to_mqtt(metric_values_dict):
     for metric_name, value in metric_values_dict.items():
         config = metrics.get(metric_name)
         if config is not None and config.should_measure:
-            publish_discovery_for_metric(metric_name)
             publish_metric_value(metric_name, value)
 
 
@@ -118,6 +132,7 @@ def gather_metric_values():
 
 
 def loop():
+    publish_discovery()
     metric_values = gather_metric_values()
     publish_func = bulk_publish_to_mqtt if config.group_messages else publish_to_mqtt
     publish_func(metric_values)

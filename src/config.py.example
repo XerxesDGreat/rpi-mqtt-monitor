@@ -29,6 +29,10 @@ dry_run = False
 # how many seconds between iterations of the loop
 loop_time_seconds = 10
 
+# Publishing of discovery messages is intended to be a one-time setup; this controls how frequently
+# the discovery messages are published
+discovery_message_interval_seconds = 60 * 10
+
 log_config = {
     'version': 1,
     'loggers': {
