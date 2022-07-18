@@ -165,8 +165,8 @@ def connect():
     _mqtt_client.on_disconnect = on_disconnect
     _mqtt_client.connect(config.mqtt_host, int(config.mqtt_port))
     logging.info("waiting for a connection")
+    _mqtt_client.loop_start()
     wait_for_connection()
-    _mqtt_client.loop_start
 
 
 def wait_for_connection():
@@ -180,6 +180,7 @@ def wait_for_connection():
         _current_delay_time = _current_delay_time * multiplier
         logging.info("waiting %s seconds to try again...", _current_delay_time)
         time.sleep(_current_delay_time)
+        _num_connect_attempts = _num_connect_attempts + 1
 
 
 def disconnect():
