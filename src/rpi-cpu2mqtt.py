@@ -85,7 +85,7 @@ def build_value_topic(metric_name):
 
 
 def publish_then_sleep(topic, payload, qos):
-    _mqtt_client.publish(topic, payload, qos=qos)
+    _mqtt_client.publish(topic, payload, qos=qos, retain=True)
     time.sleep(config.sleep_time)
 
 
