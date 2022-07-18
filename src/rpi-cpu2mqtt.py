@@ -8,7 +8,6 @@ from __future__ import division
 from audioop import mul
 from collections import namedtuple
 from logging.config import dictConfig
-from tkinter.tix import MAX
 import config
 
 # configure logging before bringing in other modules
