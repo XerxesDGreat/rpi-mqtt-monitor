@@ -33,6 +33,15 @@ loop_time_seconds = 10
 # the discovery messages are published
 discovery_message_interval_seconds = 60 * 10
 
+# how many times we should attempt to connect to MQTT
+max_connect_attempts = 10
+
+# how many times we should attempt before doing an exponential backoff
+# Connection will be attempted once each second for `connect_attempt_backoff_threshold`
+# number of times, then each subsequent attempt until `max_connect_attempts` the delay
+# will be doubled
+connect_attempt_backoff_threshold = 4
+
 log_config = {
     'version': 1,
     'loggers': {

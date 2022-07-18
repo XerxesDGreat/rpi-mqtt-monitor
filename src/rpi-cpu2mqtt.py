@@ -5,8 +5,10 @@
 # RUN sudo apt-get install python-pip
 
 from __future__ import division
+from audioop import mul
 from collections import namedtuple
 from logging.config import dictConfig
+from tkinter.tix import MAX
 import config
 
 # configure logging before bringing in other modules
@@ -42,6 +44,10 @@ metrics = {
 # mqtt client-related stuff
 _mqtt_client = paho.Client()
 _is_mqtt_connected = False
+_num_connect_attempts = 0
+MAX_CONNECT_ATTEMPTS = 6
+STARTING_DELAY_TIME = 1
+_current_delay_time = STARTING_DELAY_TIME
 
 # loop controls
 _should_run = True
@@ -139,14 +145,16 @@ def loop():
 
 
 def on_connect(client, userdata, flags, rc):
-    global _is_mqtt_connected
-    logging.info("client is connected with rc [%s]" % rc)
+    global _is_mqtt_connected, _num_connect_attempts, _current_delay_time
+    logging.info("client is connected with rc [%s]", rc)
     _is_mqtt_connected = True
+    _num_connect_attempts = 0
+    _current_delay_time = STARTING_DELAY_TIME
 
 
 def on_disconnect(client, userdata, rc):
     global _is_mqtt_connected
-    logging.info("client is disconnected with rc [%s]" % rc)
+    logging.info("client is disconnected with rc [%s]",  rc)
     _is_mqtt_connected = False
     disconnect()
 
@@ -157,7 +165,22 @@ def connect():
     _mqtt_client.on_connect = on_connect
     _mqtt_client.on_disconnect = on_disconnect
     _mqtt_client.connect(config.mqtt_host, int(config.mqtt_port))
-    _mqtt_client.loop_start()
+    logging.info("waiting for a connection")
+    wait_for_connection()
+    _mqtt_client.loop_start
+
+
+def wait_for_connection():
+    global _num_connect_attempts, _current_delay_time
+    while not _is_mqtt_connected:
+        if _num_connect_attempts >= config.max_connect_attempts:
+            raise Exception("unable to connect after %s attempts" % _num_connect_attempts)
+        multiplier = 1
+        if _num_connect_attempts >= config.connect_attempt_backoff_threshold:
+            multiplier = 2
+        _current_delay_time = _current_delay_time * multiplier
+        logging.info("waiting %s seconds to try again...", _current_delay_time)
+        time.sleep(_current_delay_time)
 
 
 def disconnect():
